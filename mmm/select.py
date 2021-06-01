@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import random
 from statsmodels.stats.outliers_influence import variance_inflation_factor as vif
 from sklearn.feature_selection import f_regression, RFE
 from sklearn.linear_model import LinearRegression
@@ -66,25 +65,6 @@ def backwards_feature_elimination(df, y_label, X_labels, max_p=0.05):
     bfe_df = pd.DataFrame(X_labels, bfe_keep)
 
     return bfe_df
-
-def progressive_feature_enhancement(df, y_label, X_labels, max_p=0.05):
-    # progressive feature enhancement
-    random.seed(0)
-    X_labels_left = X_labels.copy()
-    X_labels_used = list()
-    while (len(X_labels_left)>0):
-        feature = X_labels_left.pop(random.randrange(len(X_labels_left)))
-        X_labels_used.append(feature)
-        p_values = run_regression(df, y_label, X_labels_left)[3]
-        p = pd.Series(p_values[1:],index=X_labels_used)
-        pfeat = p.loc[feature]
-        if (pfeat > max_p):
-            X_labels_used.remove(feature)
-            
-    pfe_keep = pd.Series(X_labels).apply(lambda x: x in X_labels_used)
-    pfe_df = pd.DataFrame(X_labels, pfe_keep)
-
-    return pfe_df
 
 def recursive_feature_elimination(df, y_label, X_labels, max_features=None):
     if max_features is None:

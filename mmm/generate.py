@@ -1,1 +1,0 @@
-# generate fake econometrics data
