@@ -1,9 +1,11 @@
+# self driving econometric modeling
+
 import pandas as pd
 import datetime as dt
 import statsmodels.api as sm
 import os
 
-from .lib.model_statistics import calculate_nrmse
+from .validate import calculate_nrmse
 
 class Model():
     def __init__(self):
