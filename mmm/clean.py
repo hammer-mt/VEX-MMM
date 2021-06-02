@@ -21,3 +21,4 @@ def remove_outliers(df, column_label):
     outlier_column = f'{column_label} (-outliers)'
     df[outlier_column] = no_outliers
     return outlier_column
+
