@@ -3,7 +3,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import pandas as pd
-
+import os
+import datetime as dt
 
 def display_accuracy_chart(y_actual, y_pred, y_label=None, accuracy=None):
     # set up figure and subplots
@@ -43,7 +44,7 @@ def display_accuracy_chart(y_actual, y_pred, y_label=None, accuracy=None):
 
 def display_contrib_chart(pred_df):
     f = plt.figure(figsize=(20,10))
-    plt.title('Contribution Chart', color='black')
+    plt.title('Contribution Chart', color='black', fontsize=20, y=1.03)
     (pred_df.sum() / pred_df.sum().sum()).plot(kind='barh')
     plt.show()
 
@@ -57,29 +58,55 @@ def display_decomp_chart(pred_df):
     
     # plot area chart
     f = plt.figure()
-    plt.title('Decomposition Chart', color='black')
+    plt.title('Decomposition Chart', color='black', fontsize=20, y=1.03)
     plot_df.plot(kind='area', figsize=(20,10), ax=f.gca())
     plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
     plt.show()
 
-def save_model(y_label, X_labels, error, algo="LinearRegression", file_loc=None):
+def save_model(y_label, error, X_labels, coefficients, algo="LinearRegression", file_loc=None):
     if file_loc is None:
-        file_loc = "/results/models.csv"
+        file_loc = "../results/models.csv"
 
-    timestamp = dt.datetime.now()
+    timestamp = dt.datetime.today().strftime('%Y-%m-%d %H:%M')
 
     data = {
         'timestamp': timestamp,
         'y_label': y_label,
+        'error': error,
         'X_labels': X_labels,
+        'coefficients': [round(c, 3) for c in coefficients],
         'algo': algo,
-        'error': error
     }
     df = pd.DataFrame([data])
 
     if os.path.isfile(file_loc):
         models = pd.read_csv(file_loc)
         df = models.append(df)
+    
+    model_no = df.shape[0]
+    df.to_csv(file_loc, index=False)
+    print(f"Model {model_no} saved to {file_loc}")
 
-    df.to_csv(file_loc)
+def load_models(file_loc=None):
+    if file_loc is None:
+        file_loc = "../results/models.csv"
+
+    if os.path.isfile(file_loc):
+        models = pd.read_csv(file_loc)
+        return models
+    else:
+        print(f"No models saved at {file_loc}")
+        return pd.DataFrame(columns=['timestamp', 'y_label', 'X_labels', 'algo', 'error'])
+
+def clear_models(file_loc=None):
+    if file_loc is None:
+        file_loc = "../results/models.csv"
+
+    if os.path.isfile(file_loc):
+        os.remove(file_loc)
+
+        print(f"Models cleared from {file_loc}")
+
+    else:
+        print(f"No models saved at {file_loc}")

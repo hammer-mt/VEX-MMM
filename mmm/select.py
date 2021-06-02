@@ -3,6 +3,8 @@
 import numpy as np
 import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor as vif
+from sklearn.feature_selection import f_regression
+np.seterr(divide='ignore', invalid='ignore') # hide error warning for vif
 from sklearn.feature_selection import f_regression, RFE
 from sklearn.linear_model import LinearRegression
 
@@ -10,6 +12,13 @@ from .build import run_regression
 
 def guess_date_column(df):
     guesses = ['date', 'Date', 'day', 'Day', 'week', 'Week', 'Month', 'month']
+    for x in guesses:
+        if x in df.columns:
+            return x
+    return None
+
+def guess_y_column(df):
+    guesses = ['revenue', 'Revenue', 'sales', 'Sales', 'conversions', 'Conversions', 'Purchases', 'purchases']
     for x in guesses:
         if x in df.columns:
             return x
@@ -45,19 +54,17 @@ def y_variable_correlation(df, y_label, X_labels, min_corr=0.3):
     # 0.5 = Moderate
     # 0.3 = Weak
     # 0 = None
+    
+    all_variables = X_labels.copy()
+    all_variables.extend([y_label])
 
-    corr = df[X_labels]
-    corr_dep = abs(corr[y_label].drop(y_label))
-    corr_dep['corr_keep'] = corr_dep['corr'] > min_corr
-    return corr_dep
-
-def univariate_feature_selection(df, y_label, X_labels, max_p=0.05):
-    # univariate feature selection
-    f_select = f_regression(df[X_labels], df[y_label], center=True)
-    uni_df = pd.DataFrame(f_select[0], index=X_labels)
-    uni_keep = uni_df['uni_p'] < max_p
-    uni_df['uni_keep'] = uni_keep
-    return uni_df
+    corr = df[all_variables].corr()
+    corr_df = pd.DataFrame({'corr':abs(corr[y_label].drop(y_label))})
+    corr_df['corr_keep'] = corr_df['corr'] > min_corr
+    
+    corr_keep = list(corr_df[corr_df['corr_keep']==True].index.values)
+    
+    return corr_keep, corr_df
 
 def variance_inflation_factor(df, X_labels, max_vif=5):
     # Variance Inflation Factor (VIF)
@@ -75,15 +82,17 @@ def variance_inflation_factor(df, X_labels, max_vif=5):
     vif_df.drop(['idx'], axis=1, inplace=True)
     vif_df.index.name = None
     vif_df['vif_keep'] = vif_df['vif'] < max_vif
+    
+    vif_keep = list(vif_df[vif_df['vif_keep']==True].index.values)
 
-    return vif_df
+    return vif_keep, vif_df
     
 def backwards_feature_elimination(df, y_label, X_labels, max_p=0.05):
     # backwards feature elimination
     X_labels_left = X_labels.copy()
     while (len(X_labels_left)>0):
         p_values = run_regression(df, y_label, X_labels_left)[3]
-        p = pd.Series(p_values[1:],index=X_labels_left)      
+        p = pd.Series(p_values,index=X_labels_left)      
         pmax = max(p)
         feature_with_p_max = p.idxmax()
         if (pmax > max_p):
@@ -91,18 +100,21 @@ def backwards_feature_elimination(df, y_label, X_labels, max_p=0.05):
         else:
             break
     
-    bfe_keep = pd.Series(X_labels).apply(lambda x: x in X_labels_left)
-    bfe_df = pd.DataFrame(X_labels, bfe_keep)
+    bfe = pd.Series(X_labels).apply(lambda x: x in X_labels_left)
+    bfe.index = X_labels
+    bfe_df = pd.DataFrame({'bfe_keep': bfe})
+    bfe_keep = list(bfe_df[bfe_df['bfe_keep']==True].index.values)
 
-    return bfe_df
+    return bfe_keep, bfe_df
 
 def recursive_feature_elimination(df, y_label, X_labels, max_features=None):
     if max_features is None:
-        max_features = round(len(X_labels)/5)
+        max_features = max(round(len(X_labels)/5),1)
 
-    rfe = RFE(LinearRegression(), max_features).fit(df[X_labels], df[y_label])
-    rfe_ranking = rfe.ranking_
-    rfe_keep = rfe.support_
-    rfe_df = pd.DataFrame(X_labels, rfe_keep)
-    rfe_df['rfe_ranking'] = rfe_ranking
-    return rfe_df
+    rfe = RFE(LinearRegression(), n_features_to_select=max_features).fit(df[X_labels], df[y_label])
+    rfe_keep = pd.Series(rfe.support_)
+    rfe_keep.index = X_labels
+    
+    rfe_df = pd.DataFrame({'rfe_keep': rfe_keep})
+    rfe_df['rfe_ranking'] = rfe.ranking_
+    return rfe_keep, rfe_df

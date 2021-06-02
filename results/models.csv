@@ -1,0 +1,4 @@
+timestamp,y_label,error,X_labels,coefficients,algo
+2021-06-02 16:57,revenue,0.531,"['facebook_cost', 'affiliate_cost', 'tv_cost', 'constant']","[3.702, 0.115, 0.459, 15559.017]",LinearRegression
+2021-06-02 16:57,revenue,0.632,"['facebook_cost', 'affiliate_cost', 'tv_cost', 'constant']","[3.063, 0.031, 0.42, 19734.923]",LinearRegression
+2021-06-02 16:57,revenue,0.802,"['facebook_cost', 'affiliate_cost', 'tv_cost', 'constant', 'friday', 'monday', 'saturday', 'sunday', 'thursday', 'tuesday', 'wednesday']","[3.589, 0.416, 15450.077, 4368.401, -1369.52, 5445.858, -2751.735, 1625.335]",LinearRegression

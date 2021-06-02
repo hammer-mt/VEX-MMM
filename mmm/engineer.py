@@ -46,21 +46,41 @@ def add_interaction_effect(df, column_label_a, column_label_b):
     df[interaction_name] = df[column_label_a] * df[column_label_b]
     return interaction_name
 
-def add_day_of_week_dummies(df, date_label):
-    df['day_of_week'] = df[date_label].dt.day_name()
+def add_day_of_week_dummies(df, date_label=None):
+    if date_label is None:
+        dates_index = pd.to_datetime(df.index)
+        date_label = '_date'
+        df[date_label] = dates_index
+        
+    else:
+        dates_index = pd.to_datetime(df[date_label])
+
+    df['day_of_week'] = dates_index.day_name()
+    df['day_of_week'] = df['day_of_week'].str.lower()
     dummies = pd.get_dummies(df['day_of_week'])
         
-    dummies[date_label] = df[date_label]
+    dummies[date_label] = dates_index
     
     df = pd.merge(df, dummies, left_on=date_label, right_on=date_label, how='left')
     
     df.drop(['day_of_week'], axis=1, inplace=True)
+    
+    df.drop(['_date'], axis=1, inplace=True) # in case we added it
     dummies.drop([date_label], axis=1, inplace=True)
     
-    return list(dummies.columns)
+    return list(dummies.columns), df
 
-def add_month_of_year_dummies(df, date_label):
-    df['month_of_year'] = df[date_label].dt.month_name()
+def add_month_of_year_dummies(df, date_label=None):
+    if date_label is None:
+        dates_index = pd.to_datetime(df.index)
+        date_label = '_date'
+        df[date_label] = dates_index
+        
+    else:
+        dates_index = pd.to_datetime(df[date_label])
+
+    df['month_of_year'] = dates_index.month_name()
+    df['month_of_year'] = df['month_of_year'].str.lower()
     
     dummies = pd.get_dummies(df['month_of_year'])
         
@@ -69,15 +89,17 @@ def add_month_of_year_dummies(df, date_label):
     df = pd.merge(df, dummies, left_on=date_label, right_on=date_label, how='left')
     
     df.drop(['month_of_year'], axis=1, inplace=True)
+
+    df.drop(['_date'], axis=1, inplace=True) # in case we added it
     dummies.drop([date_label], axis=1, inplace=True)
     
-    return list(dummies.columns)
+    return list(dummies.columns), df
 
 def add_payday_dummies(df, date_label):
     payday_column = 'payday'
     df[payday_column] = df[date_label].apply(lambda x:1 if x.strftime('%d') in ('14','15','16','30','31','1','2') else 0)
 
-    return payday_column
+    return payday_column, df
 
 def categorize_campaigns(df, containing):
     containing_cols = get_cols_containing(df, containing)
@@ -85,4 +107,4 @@ def categorize_campaigns(df, containing):
     agg_label = df[f'"{containing}" Agg']
     df[agg_label] = df[containing_cols].sum()
 
-    return agg_label
+    return agg_label, df
