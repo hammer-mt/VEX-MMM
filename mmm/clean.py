@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def make_column_index(df, column_label):
     df.index = df[column_label]
@@ -22,3 +23,17 @@ def remove_outliers(df, column_label):
     df[outlier_column] = no_outliers
     return outlier_column
 
+def unstack_data(df, metric_column, unstack_column):
+    pivoted = pd.pivot_table(df, index=['date'], values=[metric_column], columns=[unstack_column], aggfunc=[np.sum])
+    pivoted.columns = pivoted.columns.droplevel(0)
+    pivoted.columns.name = None
+    pivoted = pivoted.reset_index()
+    pivoted.columns = [col[1] for col in pivoted.columns]
+
+    metric_columns = list(pivoted.columns[1:])
+    metric_columns = [f"{c} | {metric_column}" for c in metric_columns]
+
+    pivoted.columns = ["date"] + metric_columns
+    pivoted.fillna(0, inplace=True)
+
+    return pivoted
