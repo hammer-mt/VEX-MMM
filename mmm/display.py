@@ -2,11 +2,10 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-from IPython.display import display
 import pandas as pd
-pd.set_option('display.float_format', lambda x: '%.3f' % x) # suppress scientific notation
 
-def display_accuracy_charts(y_actual, y_pred, dates_index):
+
+def display_accuracy_chart(y_actual, y_pred, y_label=None, accuracy=None):
     # set up figure and subplots
     fig, ax = plt.subplots(figsize=(14,8), nrows=2, ncols=1, gridspec_kw={'height_ratios': [3, 1]})
     
@@ -15,21 +14,31 @@ def display_accuracy_charts(y_actual, y_pred, dates_index):
     plot_df['Actual'] = y_actual
     plot_df['Predicted'] = y_pred
     plot_df['Error'] = (y_pred - y_actual) / y_actual * 100
-    plot_df.index = dates_index
     
     # plot actual vs predicted on grid
-    plot_df[['Actual', 'Predicted']].plot(ax=ax[0])
+    if y_label:
+        plot_df[['Actual', 'Predicted']].plot(ax=ax[0], ylabel=y_label)
+    else:
+        plot_df[['Actual', 'Predicted']].plot(ax=ax[0])
+
+    if accuracy:
+        ax[0].annotate(f'{accuracy[0]} = {accuracy[1]}', xy=(0.05, 0.92), xycoords='axes fraction')
+
+    ax[0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.12), ncol=2)
     ax[0].grid(True, which='both')
     
     # plot error on grid
     plot_df[['Error']].plot(ax=ax[1], color='red')
     ax[1].grid(True, which='both')
+    ax[1].legend(loc="upper center", bbox_to_anchor=(0.5, 1.35), ncol=2)
     fmt = '%.0f%%' # Format you want the ticks, e.g. '40%'
     yticks = mtick.FormatStrFormatter(fmt)
     ax[1].yaxis.set_major_formatter(yticks)
     
     # show plots
     fig.autofmt_xdate(rotation=45)
+    plt.gcf().suptitle("Actual vs Predicted", fontsize=20)
+    
     plt.show()
 
 def display_contrib_chart(pred_df):
@@ -53,3 +62,24 @@ def display_decomp_chart(pred_df):
     plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
 
     plt.show()
+
+def save_model(y_label, X_labels, error, algo="LinearRegression", file_loc=None):
+    if file_loc is None:
+        file_loc = "/results/models.csv"
+
+    timestamp = dt.datetime.now()
+
+    data = {
+        'timestamp': timestamp,
+        'y_label': y_label,
+        'X_labels': X_labels,
+        'algo': algo,
+        'error': error
+    }
+    df = pd.DataFrame([data])
+
+    if os.path.isfile(file_loc):
+        models = pd.read_csv(file_loc)
+        df = models.append(df)
+
+    df.to_csv(file_loc)

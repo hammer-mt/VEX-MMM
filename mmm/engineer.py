@@ -1,11 +1,10 @@
 import statsmodels.tsa as tsa
 import pandas as pd
 
-from .helpers import get_cols_containing
+from .select import get_cols_containing
 
 def add_constant(df):
     df['constant'] = 1
-    return df
 
 def add_adstocks(df, column_label, adstock_rates=None):
     if adstock_rates is None:

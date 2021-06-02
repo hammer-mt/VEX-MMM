@@ -8,6 +8,36 @@ from sklearn.linear_model import LinearRegression
 
 from .build import run_regression
 
+def guess_date_column(df):
+    guesses = ['date', 'Date', 'day', 'Day', 'week', 'Week', 'Month', 'month']
+    for x in guesses:
+        if x in df.columns:
+            return x
+    return None
+
+def add_X_labels(X_labels, add_cols):
+    for x in add_cols:
+        if x not in X_labels:
+            X_labels.append(x)
+
+    return X_labels
+
+def del_X_labels(X_labels, del_cols):
+    for x in del_cols:
+        if x in X_labels:
+            X_labels.remove(x)
+
+    return X_labels
+
+def get_all_X_labels(df, y_label, date_label=None):
+    X_labels = list(df.columns)
+    X_labels.remove(y_label)
+    if date_label:
+        X_labels.remove(date_label)
+    return X_labels
+
+def get_cols_containing(df, containing):
+    return [x for x in list(df.columns) if containing in x]
 
 def y_variable_correlation(df, y_label, X_labels, min_corr=0.3):
     # 1.0 = Perfect
