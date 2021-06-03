@@ -100,3 +100,36 @@ def handle_covid_data(data, sub_region_1=None):
     
     df.reset_index(inplace=True)
     return df[df.columns[9:]]
+
+def handle_weather_data(df):
+    year = df['YEAR'].astype(str)
+    month = df['MO'].astype(str)
+    day = df['DY'].astype(str)
+    
+    month = month.apply(lambda x: '0'+x if len(x) == 1 else x)
+    day = day.apply(lambda x: '0'+x if len(x) == 1 else x)
+    
+    df['date'] = pd.to_datetime(year + "-" + month + "-" + day)
+    df = df[['date', 'T2M_RANGE', 'T2M_MAX', 'T2M_MIN', 'T2M']]
+    
+    return df
+
+def create_holiday_dummies(df):
+    dr = pd.date_range(start=df['date'].min(), end=df['date'].max())
+    date_df = pd.DataFrame({'date': dr})
+    for _, row in df.iterrows():
+        date_df[row[1]] = (date_df['date'] == row[0])
+        
+    date_df.iloc[:, 1:] = date_df.iloc[:, 1:].astype(int)
+    return date_df
+
+def create_date_range_dummies(df):
+    dr = pd.date_range(start=df['start'].min(), end=df['end'].max())
+    
+    date_df = pd.DataFrame({'date': dr})
+
+    for _, row in df.iterrows():
+        date_df[row[2]] = (date_df['date'] >= row[0]) & (date_df['date'] <= row[1])
+        
+    date_df.iloc[:, 1:] = date_df.iloc[:, 1:].astype(int)
+    return date_df
