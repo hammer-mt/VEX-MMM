@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import datetime as dt
 
 def make_column_index(df, column_label):
     df.index = df[column_label]
@@ -37,3 +38,65 @@ def unstack_data(df, metric_column, unstack_column):
     pivoted.fillna(0, inplace=True)
 
     return pivoted
+
+def transpose_data(df):
+    date_col = df.columns[0]
+    df = df.T
+    df.columns = df.iloc[0]
+    df.drop(df.index[0], inplace=True)
+    df.reset_index(inplace=True)
+    df.rename(columns={"index": date_col}, inplace=True)
+    df = df.rename_axis(None, axis = 1)
+    return df
+
+def interpolate_weekly_data(df):
+    date_col = df.columns[0]
+    df[date_col] = df[date_col].apply(lambda x: dt.datetime.strptime(f"{x}-1", "%Y-%W-%w")) # mondays
+    df[date_col] = pd.to_datetime(df[date_col]) # datetime
+    df.set_index(date_col, inplace=True)
+    df_reindexed = df.reindex(pd.date_range(start=df.index.min(),
+                                        end=df.index.max() + dt.timedelta(days=6),
+                                        freq='1D'))
+
+    col_to_resample = df_reindexed.columns[0]
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].fillna(0)
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].astype(str)
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].apply(lambda x: x.replace(',',''))
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].apply(lambda x: x.replace('$',''))
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].apply(lambda x: x.replace('£',''))
+    df_reindexed[col_to_resample] = df_reindexed[col_to_resample].apply(lambda x: x.replace('€',''))
+    df_reindexed[col_to_resample] = pd.to_numeric(df_reindexed[col_to_resample])
+    df_reindexed[col_to_resample].replace({0:np.nan}, inplace=True)
+    df = df_reindexed.interpolate(method='linear')
+    df = df / 7
+    df.reset_index(inplace=True)
+    df.rename({'index': 'date'}, axis=1, inplace=True)
+    
+    return df
+
+def handle_search_trends_data(df):
+    # delete any '<' signs for low volume days
+    for c in df.select_dtypes(include=['object']).columns[1:]:
+        df[c] = df[c].str.replace('<', '')
+        df[c] = pd.to_numeric(df[c])
+
+    date_col = df.columns[0]
+    df[date_col] = pd.to_datetime(df[date_col])
+    df.set_index(date_col, inplace=True)
+    df_reindexed = df.reindex(pd.date_range(start=df.index.min(),
+                                            end=df.index.max() + dt.timedelta(days=6), freq='1D'))
+    df = df_reindexed.interpolate(method='linear')
+    df = df.round(1)
+    df.reset_index(inplace=True)
+    df.rename({'index': 'date'}, axis=1, inplace=True)
+    return df
+
+def handle_covid_data(data, sub_region_1=None):
+    if sub_region_1 is None:
+        df = data[data['sub_region_1'].isnull()]
+    else:
+        df = data[data['sub_region_1'] == sub_region_1]
+        df = df[df['sub_region_2'].isnull()]
+    
+    df.reset_index(inplace=True)
+    return df[df.columns[9:]]
