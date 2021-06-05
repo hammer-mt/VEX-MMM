@@ -7,48 +7,50 @@ from sklearn.feature_selection import f_regression
 np.seterr(divide='ignore', invalid='ignore') # hide error warning for vif
 from sklearn.feature_selection import f_regression, RFE
 from sklearn.linear_model import LinearRegression
+from typing import List, Tuple, Union
 
 from .build import run_regression
 
-def guess_date_column(df):
+def guess_date_column(df:pd.DataFrame) -> None:
     guesses = ['date', 'Date', 'day', 'Day', 'week', 'Week', 'Month', 'month']
     for x in guesses:
         if x in df.columns:
             return x
     return None
 
-def guess_y_column(df):
+def guess_y_column(df:pd.DataFrame) -> None:
     guesses = ['revenue', 'Revenue', 'sales', 'Sales', 'conversions', 'Conversions', 'Purchases', 'purchases']
     for x in guesses:
         if x in df.columns:
             return x
     return None
 
-def add_X_labels(X_labels, add_cols):
+def add_X_labels(X_labels:List[str], add_cols:List[str]) -> List[str]:
     for x in add_cols:
         if x not in X_labels:
             X_labels.append(x)
 
     return X_labels
 
-def del_X_labels(X_labels, del_cols):
+def del_X_labels(X_labels:List[str], del_cols:List[str]) -> List[str]:
     for x in del_cols:
         if x in X_labels:
             X_labels.remove(x)
 
     return X_labels
 
-def get_all_X_labels(df, y_label, date_label=None):
+def get_all_X_labels(df:pd.DataFrame, y_label:str, date_label:str=None) -> List[str]:
     X_labels = list(df.columns)
     X_labels.remove(y_label)
     if date_label:
         X_labels.remove(date_label)
+    
     return X_labels
 
-def get_cols_containing(df, containing):
+def get_cols_containing(df:pd.DataFrame, containing:str) -> List[str]:
     return [x for x in list(df.columns) if containing in x]
 
-def y_variable_correlation(df, y_label, X_labels, min_corr=0.3):
+def y_variable_correlation(df:pd.DataFrame, y_label:str, X_labels:List[str], min_corr:float=0.3) -> Tuple[List, pd.DataFrame]:
     # 1.0 = Perfect
     # 0.7 = Strong
     # 0.5 = Moderate
@@ -66,7 +68,7 @@ def y_variable_correlation(df, y_label, X_labels, min_corr=0.3):
     
     return corr_keep, corr_df
 
-def variance_inflation_factor(df, X_labels, max_vif=5):
+def variance_inflation_factor(df:pd.DataFrame, X_labels:List[str], max_vif:int=5) -> Tuple[List, pd.DataFrame]:
     # Variance Inflation Factor (VIF)
     # tests for colinearity: A VIF of over 10 for some feature indicates that over 90% 
     # of the variance in that feature is explained by the remaining features. Over 100 
@@ -87,7 +89,8 @@ def variance_inflation_factor(df, X_labels, max_vif=5):
 
     return vif_keep, vif_df
     
-def backwards_feature_elimination(df, y_label, X_labels, max_p=0.05):
+def backwards_feature_elimination(df:pd.DataFrame, y_label:str, 
+                                  X_labels:List[str], max_p:float=0.05) -> Tuple[List, pd.DataFrame]:
     # backwards feature elimination
     X_labels_left = X_labels.copy()
     while (len(X_labels_left)>0):
@@ -107,7 +110,7 @@ def backwards_feature_elimination(df, y_label, X_labels, max_p=0.05):
 
     return bfe_keep, bfe_df
 
-def recursive_feature_elimination(df, y_label, X_labels, max_features=None):
+def recursive_feature_elimination(df:pd.DataFrame, y_label:str, X_labels:List[str], max_features:List[float]=None) -> Tuple[pd.Series, pd.DataFrame]:
     if max_features is None:
         max_features = max(round(len(X_labels)/5),1)
 
@@ -117,4 +120,5 @@ def recursive_feature_elimination(df, y_label, X_labels, max_features=None):
     
     rfe_df = pd.DataFrame({'rfe_keep': rfe_keep})
     rfe_df['rfe_ranking'] = rfe.ranking_
+    
     return rfe_keep, rfe_df

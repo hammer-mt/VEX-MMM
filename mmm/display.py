@@ -1,12 +1,19 @@
-# show the charts and tables
 
+# show the charts and tables
+import datetime as dt
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-import pandas as pd
+from typing import List, Tuple, Union
 import os
-import datetime as dt
 
-def display_accuracy_chart(y_actual, y_pred, y_label=None, accuracy=None):
+from pandas.core.arrays import boolean
+
+def display_accuracy_chart(y_actual:Union[np.array, List[float], pd.Series], 
+                           y_pred:Union[np.array, List[float], pd.Series], 
+                           y_label:str=None, 
+                           accuracy:Tuple[str, str]=None) -> None:
     # set up figure and subplots
     fig, ax = plt.subplots(figsize=(14,8), nrows=2, ncols=1, gridspec_kw={'height_ratios': [3, 1]})
     
@@ -42,13 +49,13 @@ def display_accuracy_chart(y_actual, y_pred, y_label=None, accuracy=None):
     
     plt.show()
 
-def display_contrib_chart(pred_df):
+def display_contrib_chart(pred_df:pd.DataFrame) -> None:
     f = plt.figure(figsize=(20,10))
     plt.title('Contribution Chart', color='black', fontsize=20, y=1.03)
     (pred_df.sum() / pred_df.sum().sum()).plot(kind='barh')
     plt.show()
 
-def display_decomp_chart(pred_df):
+def display_decomp_chart(pred_df:pd.DataFrame) -> None:
     plot_df = pred_df.copy()
     
     # separate positive & negative values
@@ -64,7 +71,12 @@ def display_decomp_chart(pred_df):
 
     plt.show()
 
-def save_model(y_label, error, X_labels, coefficients, algo="LinearRegression", file_loc=None):
+def save_model(y_label:str, 
+               error:Union[np.array, List[float], pd.Series], 
+               X_labels:List[str], 
+               coefficients:Union[np.array, List[float], pd.Series], 
+               algo:str="LinearRegression", file_loc:str=None) -> None:
+    
     if file_loc is None:
         file_loc = "../results/models.csv"
 
@@ -88,7 +100,7 @@ def save_model(y_label, error, X_labels, coefficients, algo="LinearRegression", 
     df.to_csv(file_loc, index=False)
     print(f"Model {model_no} saved to {file_loc}")
 
-def load_models(file_loc=None):
+def load_models(file_loc:str=None) -> pd.DataFrame:
     if file_loc is None:
         file_loc = "../results/models.csv"
 
@@ -99,7 +111,7 @@ def load_models(file_loc=None):
         print(f"No models saved at {file_loc}")
         return pd.DataFrame(columns=['timestamp', 'y_label', 'X_labels', 'algo', 'error'])
 
-def clear_models(file_loc=None):
+def clear_models(file_loc:str=None) -> None:
     if file_loc is None:
         file_loc = "../results/models.csv"
 
