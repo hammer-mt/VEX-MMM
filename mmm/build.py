@@ -57,6 +57,7 @@ def run_ml_regression_with_test_split(df, y_label, X_labels, test_size=0.2):
     return y_test, y_pred, coefficients
 
 def create_results_df(X_labels, coefficients, p_values=None):
+    # TODO: add standard errors
     if p_values is None: # ml algo doesn't give p_values
         results_df = pd.DataFrame({'coefficient': coefficients}, index=X_labels)
     else:

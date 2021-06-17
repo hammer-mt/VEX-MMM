@@ -9,20 +9,34 @@ from sklearn.feature_selection import f_regression, RFE
 from sklearn.linear_model import LinearRegression
 
 from .build import run_regression
+from .validate import calculate_nrmse
 
 def guess_date_column(df):
-    guesses = ['date', 'Date', 'day', 'Day', 'week', 'Week', 'Month', 'month']
+    guesses = ['date', 'day', 'week', 'month']
+    columns = [x.lower() for x in df.columns]
     for x in guesses:
-        if x in df.columns:
+        if x in columns:
             return x
     return None
 
 def guess_y_column(df):
-    guesses = ['revenue', 'Revenue', 'sales', 'Sales', 'conversions', 'Conversions', 'Purchases', 'purchases']
+    guesses = ['revenue', 'sales', 'conversions', 'purchases']
+    columns = [x.lower() for x in df.columns]
     for x in guesses:
-        if x in df.columns:
+        if x in columns:
             return x
     return None
+
+def guess_media_columns(df):
+    guesses = ['cost', 'spend', 'impression', 'spent', 'clicks']
+    columns = [x.lower() for x in df.columns]
+    media_columns = []
+    for x in guesses:
+        for y in columns:
+            if x in y:
+                media_columns.append(y)
+
+    return media_columns
 
 def add_X_labels(X_labels, add_cols):
     for x in add_cols:
@@ -118,3 +132,24 @@ def recursive_feature_elimination(df, y_label, X_labels, max_features=None):
     rfe_df = pd.DataFrame({'rfe_keep': rfe_keep})
     rfe_df['rfe_ranking'] = rfe.ranking_
     return rfe_keep, rfe_df
+
+def find_best_feature(df, y_label, X_candidates, X_labels=None):
+    models = dict()
+    if X_labels is None:
+        X_labels = []
+
+    for x in X_candidates:
+        y_actual, y_pred, _ = run_regression(df, y_label, [x] + X_labels)
+
+        # test accuracy
+        nrmse = calculate_nrmse(y_actual, y_pred)
+        
+        models[x] = nrmse
+
+    models_df = pd.DataFrame(models.items(), columns=['candidate', 'nrmse'])
+    models_df.index = models_df['candidate']
+    models_df.drop(columns=['candidate'], inplace=True)
+    min_label = models_df[['nrmse']].idxmin()[0]
+    return min_label
+
+# TODO: eliminate negative coefficients

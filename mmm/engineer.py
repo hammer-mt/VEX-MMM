@@ -55,7 +55,7 @@ def add_day_of_week_dummies(df, date_label=None):
     else:
         dates_index = pd.to_datetime(df[date_label])
 
-    df['day_of_week'] = dates_index.day_name()
+    df['day_of_week'] = dates_index.dt.day_name()
     df['day_of_week'] = df['day_of_week'].str.lower()
     dummies = pd.get_dummies(df['day_of_week'])
         
@@ -79,7 +79,7 @@ def add_month_of_year_dummies(df, date_label=None):
     else:
         dates_index = pd.to_datetime(df[date_label])
 
-    df['month_of_year'] = dates_index.month_name()
+    df['month_of_year'] = dates_index.dt.month_name()
     df['month_of_year'] = df['month_of_year'].str.lower()
     
     dummies = pd.get_dummies(df['month_of_year'])
