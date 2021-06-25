@@ -2,15 +2,15 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-def make_column_index(df, column_label):
+def make_column_index(df:pd.DataFrame, column_label:str) -> None:
     df.index = df[column_label]
     df.drop(column_label, axis=1, inplace=True)
     df.index.name = None
 
-def rename_column(df, column_label, new_name):
+def rename_column(df:pd.DataFrame, column_label:str, new_name:str) -> None:
     df.rename(columns={column_label: new_name}, inplace=True)
 
-def remove_outliers(df, column_label):
+def remove_outliers(df:pd.DataFrame, column_label:str) -> str:
     raw_data = df[column_label]
     mean = np.mean(raw_data)
     std_dev = np.std(raw_data)
@@ -24,7 +24,7 @@ def remove_outliers(df, column_label):
     df[outlier_column] = no_outliers
     return outlier_column
 
-def unstack_data(df, metric_column, unstack_column):
+def unstack_data(df:pd.DataFrame, metric_column:str, unstack_column:str) -> pd.DataFrame:
     pivoted = pd.pivot_table(df, index=['date'], values=[metric_column], columns=[unstack_column], aggfunc=[np.sum])
     pivoted.columns = pivoted.columns.droplevel(0)
     pivoted.columns.name = None
@@ -39,7 +39,7 @@ def unstack_data(df, metric_column, unstack_column):
 
     return pivoted
 
-def transpose_data(df):
+def transpose_data(df:pd.DataFrame) -> pd.DataFrame:
     date_col = df.columns[0]
     df = df.T
     df.columns = df.iloc[0]
@@ -49,7 +49,7 @@ def transpose_data(df):
     df = df.rename_axis(None, axis = 1)
     return df
 
-def interpolate_weekly_data(df):
+def interpolate_weekly_data(df:pd.DataFrame) -> pd.DataFrame:
     date_col = df.columns[0]
     df[date_col] = df[date_col].apply(lambda x: dt.datetime.strptime(f"{x}-1", "%Y-%W-%w")) # mondays
     df[date_col] = pd.to_datetime(df[date_col]) # datetime
@@ -74,7 +74,34 @@ def interpolate_weekly_data(df):
     
     return df
 
-def handle_search_trends_data(df):
+def interpolate_monthly_data(df:pd.DataFrame, col_to_resample:str="") -> pd.DataFrame:
+    df['Month Date'] = pd.to_datetime(df['Date'], format="%b %Y")
+    df['start_of_month'] = (df['Month Date'].dt.floor('d') + pd.offsets.MonthEnd(0) - pd.offsets.MonthBegin(1))
+    df['end_of_month'] = pd.to_datetime(df['start_of_month']) + pd.offsets.MonthEnd(1)
+    reindexed = df.set_index("start_of_month")
+    reindexed = df.reindex(pd.date_range(start=reindexed.index.min(),
+                                        end=reindexed.end_of_month.max(),
+                                        freq='1D'))
+    
+    if col_to_resample == "":
+        col_to_resample = reindexed.columns[0]
+    
+    resampled = reindexed[col_to_resample]
+    resampled.replace({0:np.nan}, inplace=True)
+    resampled = resampled.interpolate(method='linear')
+    resampled = resampled.reset_index()
+    resampled.rename({'index': 'date'}, axis=1, inplace=True)
+    resampled.fillna(0, inplace=True)
+    return resampled
+
+def group_weekly(df:pd.DataFrame, date_col:str) -> pd.DataFrame:
+    df['week_num'] = df[date_col].dt.isocalendar().week
+    df['year'] = df[date_col].dt.isocalendar().year
+    df['year_week'] = df['year'].astype(str) + "-" + df['week_num'].astype(str)
+    df_weekly = df.groupby('year_week').sum()
+    return df_weekly
+
+def handle_search_trends_data(df:pd.DataFrame) -> pd.DataFrame:
     # delete any '<' signs for low volume days
     for c in df.select_dtypes(include=['object']).columns[1:]:
         df[c] = df[c].str.replace('<', '')
@@ -91,7 +118,7 @@ def handle_search_trends_data(df):
     df.rename({'index': 'date'}, axis=1, inplace=True)
     return df
 
-def handle_covid_data(data, sub_region_1=None):
+def handle_covid_data(data:pd.DataFrame, sub_region_1:str=None) -> pd.DataFrame:
     if sub_region_1 is None:
         df = data[data['sub_region_1'].isnull()]
     else:
@@ -101,7 +128,7 @@ def handle_covid_data(data, sub_region_1=None):
     df.reset_index(inplace=True)
     return df[df.columns[9:]]
 
-def handle_weather_data(df):
+def handle_weather_data(df:pd.DataFrame) -> pd.DataFrame:
     year = df['YEAR'].astype(str)
     month = df['MO'].astype(str)
     day = df['DY'].astype(str)
@@ -114,7 +141,7 @@ def handle_weather_data(df):
     
     return df
 
-def create_holiday_dummies(df):
+def create_holiday_dummies(df:pd.DataFrame) -> pd.DataFrame:
     dr = pd.date_range(start=df['date'].min(), end=df['date'].max())
     date_df = pd.DataFrame({'date': dr})
     for _, row in df.iterrows():
@@ -123,7 +150,7 @@ def create_holiday_dummies(df):
     date_df.iloc[:, 1:] = date_df.iloc[:, 1:].astype(int)
     return date_df
 
-def create_date_range_dummies(df):
+def create_date_range_dummies(df:pd.DataFrame) -> pd.DataFrame:
     dr = pd.date_range(start=df['start'].min(), end=df['end'].max())
     
     date_df = pd.DataFrame({'date': dr})
@@ -133,3 +160,17 @@ def create_date_range_dummies(df):
         
     date_df.iloc[:, 1:] = date_df.iloc[:, 1:].astype(int)
     return date_df
+
+def add_start_of_month(df:pd.DataFrame, date_col:str) -> pd.DataFrame:
+    df['start_of_month'] = (df[date_col].dt.floor('d') + pd.offsets.MonthEnd(0) - pd.offsets.MonthBegin(1))
+    return df
+
+def add_end_of_month(df:pd.DataFrame, date_col:str) -> pd.DataFrame:
+    df['end_of_month'] = pd.to_datetime(df[date_col]) + pd.offsets.MonthEnd(1)
+    return df
+
+def num_days_in_month(df:pd.DataFrame, date_col:str) -> pd.DataFrame:
+    start_of_month = (df[date_col].dt.floor('d') + pd.offsets.MonthEnd(0) - pd.offsets.MonthBegin(1))
+    end_of_month = pd.to_datetime(df[date_col]) + pd.offsets.MonthEnd(1)
+    df['days_in_month'] = (end_of_month - start_of_month).dt.days + 1
+    return df
