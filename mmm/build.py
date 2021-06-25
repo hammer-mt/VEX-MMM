@@ -59,12 +59,7 @@ def run_ml_regression_with_test_split(df:pd.DataFrame, y_label:str, X_labels:Lis
 
     return y_test, y_pred, coefficients
 
-<<<<<<< HEAD
-def create_results_df(X_labels, coefficients, p_values=None):
-    # TODO: add standard errors
-=======
 def create_results_df(X_labels:List[str], coefficients:np.array, p_values:List[float]=None) -> pd.DataFrame:
->>>>>>> faafb4d18be05fb3e30bcfb7c1a828a679bea375
     if p_values is None: # ml algo doesn't give p_values
         results_df = pd.DataFrame({'coefficient': coefficients}, index=X_labels)
     else:
@@ -72,7 +67,7 @@ def create_results_df(X_labels:List[str], coefficients:np.array, p_values:List[f
 
     return results_df
 
-def create_pred_df(df:pd.DataFrame, results_df:pd.DataFrame) -> pd.DatFrame:
+def create_pred_df(df:pd.DataFrame, results_df:pd.DataFrame) -> pd.DataFrame:
     # calculate predictions
     X_labels = results_df.index
     pred_df = df[X_labels].copy()

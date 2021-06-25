@@ -49,8 +49,15 @@ def transpose_data(df:pd.DataFrame) -> pd.DataFrame:
     df = df.rename_axis(None, axis = 1)
     return df
 
-def interpolate_weekly_data(df:pd.DataFrame) -> pd.DataFrame:
-    date_col = df.columns[0]
+def interpolate_weekly_data(df, date_col=None, resample_col=None):
+    df = df.copy()
+
+    if date_col == None:
+        date_col = df.columns[0]
+        
+    if resample_col == None:
+        resample_col = df.columns[1]
+        
     df[date_col] = df[date_col].apply(lambda x: dt.datetime.strptime(f"{x}-1", "%Y-%W-%w")) # mondays
     df[date_col] = pd.to_datetime(df[date_col]) # datetime
     df.set_index(date_col, inplace=True)
@@ -74,19 +81,26 @@ def interpolate_weekly_data(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def interpolate_monthly_data(df:pd.DataFrame, col_to_resample:str="") -> pd.DataFrame:
-    df['Month Date'] = pd.to_datetime(df['Date'], format="%b %Y")
-    df['start_of_month'] = (df['Month Date'].dt.floor('d') + pd.offsets.MonthEnd(0) - pd.offsets.MonthBegin(1))
+def interpolate_monthly_data(df, date_col=None, resample_col=None):
+    df = df.copy()
+
+    if date_col == None:
+        date_col = df.columns[0]
+        
+    if resample_col == None:
+        resample_col = df.columns[1]
+
+    df[date_col] = pd.to_datetime(df[date_col], format="%Y-%m")
+    df['start_of_month'] = (df[date_col].dt.floor('d') + pd.offsets.MonthEnd(0) - pd.offsets.MonthBegin(1))
     df['end_of_month'] = pd.to_datetime(df['start_of_month']) + pd.offsets.MonthEnd(1)
+    df['days_in_month'] = (df['end_of_month'] - df['start_of_month']).dt.days + 1
+    df[resample_col] = df[resample_col] / df['days_in_month']
     reindexed = df.set_index("start_of_month")
-    reindexed = df.reindex(pd.date_range(start=reindexed.index.min(),
+    reindexed = reindexed.reindex(pd.date_range(start=reindexed.index.min(),
                                         end=reindexed.end_of_month.max(),
                                         freq='1D'))
     
-    if col_to_resample == "":
-        col_to_resample = reindexed.columns[0]
-    
-    resampled = reindexed[col_to_resample]
+    resampled = reindexed[resample_col]
     resampled.replace({0:np.nan}, inplace=True)
     resampled = resampled.interpolate(method='linear')
     resampled = resampled.reset_index()
@@ -94,12 +108,25 @@ def interpolate_monthly_data(df:pd.DataFrame, col_to_resample:str="") -> pd.Data
     resampled.fillna(0, inplace=True)
     return resampled
 
-def group_weekly(df:pd.DataFrame, date_col:str) -> pd.DataFrame:
-    df['week_num'] = df[date_col].dt.isocalendar().week
-    df['year'] = df[date_col].dt.isocalendar().year
-    df['year_week'] = df['year'].astype(str) + "-" + df['week_num'].astype(str)
-    df_weekly = df.groupby('year_week').sum()
-    return df_weekly
+def group_weekly(df, date_col:str) -> pd.DataFrame:
+    weekly = df.copy()
+    weekly['week'] = weekly[date_col].dt.isocalendar().week
+    weekly['year'] = weekly[date_col].dt.isocalendar().year
+    weekly['year_week'] = weekly['year'].astype(str) + "-" + weekly['week'].astype(str)
+    weekly = weekly.groupby('year_week').sum()
+    weekly.drop(['week', 'year'], axis=1, inplace=True)
+    weekly.reset_index(inplace=True)
+    return weekly
+
+def group_monthly(df, date_col:str) -> pd.DataFrame:
+    monthly = df.copy()
+    monthly['month'] = monthly[date_col].dt.month
+    monthly['year'] = monthly[date_col].dt.isocalendar().year
+    monthly['year_month'] = monthly['year'].astype(str) + "-" + monthly['month'].astype(str)
+    monthly = monthly.groupby('year_month').sum()
+    monthly.drop(['month', 'year'], axis=1, inplace=True)
+    monthly.reset_index(inplace=True)
+    return monthly
 
 def handle_search_trends_data(df:pd.DataFrame) -> pd.DataFrame:
     # delete any '<' signs for low volume days

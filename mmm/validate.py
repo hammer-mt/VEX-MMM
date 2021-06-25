@@ -84,7 +84,7 @@ def run_ljungbox_tests(residuals: Union[np.array, List[float], pd.Series],
     test = sms.acorr_ljungbox(residuals, lags=[lags])
     return lzip(name, test)
 
-def run_durbin_watson_test(residuals: Union[np.array, List[float], pd.Series]) -> Tuple[str: float]:
+def run_durbin_watson_test(residuals):
     # tests for autocorrelation
     # durbin watson should be between 1.5 and 2.5
     test = sms.durbin_watson(residuals)

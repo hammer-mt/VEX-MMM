@@ -12,33 +12,21 @@ from typing import List, Tuple, Union
 from .build import run_regression
 from .validate import calculate_nrmse
 
-<<<<<<< HEAD
-def guess_date_column(df):
-    guesses = ['date', 'day', 'week', 'month']
-    columns = [x.lower() for x in df.columns]
-=======
 def guess_date_column(df:pd.DataFrame) -> None:
     guesses = ['date', 'Date', 'day', 'Day', 'week', 'Week', 'Month', 'month']
->>>>>>> faafb4d18be05fb3e30bcfb7c1a828a679bea375
     for x in guesses:
         if x in columns:
             return x
     return None
 
-<<<<<<< HEAD
 def guess_y_column(df):
     guesses = ['revenue', 'sales', 'conversions', 'purchases']
     columns = [x.lower() for x in df.columns]
-=======
-def guess_y_column(df:pd.DataFrame) -> None:
-    guesses = ['revenue', 'Revenue', 'sales', 'Sales', 'conversions', 'Conversions', 'Purchases', 'purchases']
->>>>>>> faafb4d18be05fb3e30bcfb7c1a828a679bea375
     for x in guesses:
         if x in columns:
             return x
     return None
 
-<<<<<<< HEAD
 def guess_media_columns(df):
     guesses = ['cost', 'spend', 'impression', 'spent', 'clicks']
     columns = [x.lower() for x in df.columns]
@@ -51,9 +39,6 @@ def guess_media_columns(df):
     return media_columns
 
 def add_X_labels(X_labels, add_cols):
-=======
-def add_X_labels(X_labels:List[str], add_cols:List[str]) -> List[str]:
->>>>>>> faafb4d18be05fb3e30bcfb7c1a828a679bea375
     for x in add_cols:
         if x not in X_labels:
             X_labels.append(x)
@@ -148,7 +133,6 @@ def recursive_feature_elimination(df:pd.DataFrame, y_label:str, X_labels:List[st
     
     rfe_df = pd.DataFrame({'rfe_keep': rfe_keep})
     rfe_df['rfe_ranking'] = rfe.ranking_
-<<<<<<< HEAD
     return rfe_keep, rfe_df
 
 def find_best_feature(df, y_label, X_candidates, X_labels=None):
@@ -171,7 +155,3 @@ def find_best_feature(df, y_label, X_candidates, X_labels=None):
     return min_label
 
 # TODO: eliminate negative coefficients
-=======
-    
-    return rfe_keep, rfe_df
->>>>>>> faafb4d18be05fb3e30bcfb7c1a828a679bea375
